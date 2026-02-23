@@ -2,13 +2,15 @@
 
 ## Fixed Issues
 ✅ **Migration Error Fixed**: Added missing `formatter_generic` configuration to `alembic.ini`
+✅ **Multiple Heads Fixed**: Created merge migration to resolve divergent migration branches
+✅ **Idempotent Migrations**: Made table creation migrations safe for existing databases
 
 ## Quick Deploy to Render
 
 ### 1. Push to GitHub
 ```bash
 git add .
-git commit -m "Fix alembic logging configuration for Render deployment"
+git commit -m "Fix migrations for Render deployment - idempotent table creation"
 git push origin main
 ```
 
@@ -51,9 +53,36 @@ Add these in Render dashboard if not auto-configured:
 ## Startup Process
 The `start_render.py` script handles:
 1. Database connection check
-2. Automatic Alembic migrations
+2. Automatic Alembic migrations (now idempotent)
 3. Initial data creation (if needed)
 4. Gunicorn server startup
+
+## Migration Fixes Applied
+
+### 1. Logging Configuration
+Added missing formatter sections to `alembic.ini`:
+```ini
+[handler_console]
+class = StreamHandler
+args = (sys.stderr,)
+level = NOTSET
+formatter = generic
+
+[formatter_generic]
+format = %(levelname)-5.5s [%(name)s] %(message)s
+datefmt = %H:%M:%S
+```
+
+### 2. Multiple Heads Resolution
+- Created merge migration `e421fed2df5f_merge_all_heads.py`
+- Merged divergent branches into single head
+- Migration tree now has linear progression
+
+### 3. Idempotent Table Creation
+Modified `create_legal_aid_tables.py` to:
+- Check if tables exist before creating
+- Safe to run on existing databases
+- Prevents `DuplicateTable` errors
 
 ## Post-Deployment
 1. Check deployment logs in Render dashboard
@@ -68,6 +97,7 @@ If migrations fail:
 1. Check the deployment logs
 2. Verify `DATABASE_URL` is correctly set
 3. Ensure database is accessible
+4. Migrations are now idempotent and should handle existing tables
 
 ### Health Check Failures
 1. Verify the `/health` endpoint exists in your Flask app
