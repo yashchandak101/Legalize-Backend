@@ -1,0 +1,30 @@
+services:
+  # Web Service
+  - type: web
+    name: legalize-backend
+    runtime: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python start_render.py"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: legalize-db
+          property: connectionString
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: FLASK_ENV
+        value: production
+      - key: PORT
+        value: 5000
+    healthCheck:
+      path: /health
+      timeout: 30
+      interval: 60
+
+  # PostgreSQL Database
+  - type: postgres
+    name: legalize-db
+    plan: free
+    databaseName: legalize
+    user: legalize
