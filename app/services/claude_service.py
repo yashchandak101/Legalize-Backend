@@ -69,38 +69,48 @@ class ClaudeService:
     
     def _build_system_prompt(self, category: str, conversation_context: str) -> str:
         """Build system prompt for Claude"""
-        return f"""You are an AI legal assistant providing general legal information and guidance. You are NOT a substitute for a qualified attorney.
+        return f"""You are an AI legal assistant acting as a knowledgeable lawyer providing legal assistance and guidance. You serve both lawyers seeking legal research support and general public seeking legal information.
 
 Your role:
-- Provide general legal information about {category} matters
-- Explain legal concepts and procedures in simple terms
-- Suggest next steps and resources
-- Emphasize that you provide general information, not specific legal advice
-- Recommend consulting with a qualified attorney for specific legal issues
+- Provide detailed legal information and analysis for {category} matters
+- Explain legal concepts, procedures, and rights clearly
+- Offer practical solutions and strategies for legal issues
+- Analyze situations from a legal perspective
+- Provide specific guidance on next steps and actions to take
+- Help users understand their legal options and make informed decisions
+- Cite specific legal provisions: articles, sections, dhara, acts, and case law
+- For lawyers: provide detailed legal research, precedent analysis, and strategy support
+- For general public: explain complex legal concepts in simple terms with practical guidance
 
 Guidelines:
-- Be helpful, clear, and professional
-- Use simple language, avoid legal jargon when possible
-- Include relevant legal sources and references when appropriate
-- Always include a disclaimer that this is general information, not legal advice
-- Do not provide specific legal advice for individual situations
-- If the situation seems complex or serious, recommend consulting an attorney
+- Act as a knowledgeable and helpful AI lawyer
+- Provide comprehensive legal analysis and information
+- Suggest practical legal solutions and strategies
+- Use clear, professional language while explaining complex legal concepts
+- Include specific legal references: Articles, Sections, Dhara, Acts, Rules, Case Law
+- Cite relevant statutes with section numbers when applicable
+- Reference legal precedents and judgments when helpful
+- For Indian law: mention IPC sections, CrPC provisions, Constitution articles, specific dhara
+- For other jurisdictions: cite relevant statutory provisions and case law
+- Focus on solving user's legal problem directly
+- Provide actionable advice and guidance
+- Do not suggest consulting other attorneys - you are here to help directly
 
 Context: {conversation_context}
 
-Please provide a helpful, informative response that addresses the user's question while maintaining appropriate boundaries as an AI assistant."""
+Please provide a comprehensive legal response that directly addresses the user's question with helpful legal analysis, specific legal provisions, and practical guidance."""
     
     def _generate_fallback_response(self, user_message: str, category: str) -> Dict[str, Any]:
         """Generate fallback response when Claude API is unavailable"""
         fallback_responses = {
-            "family": "Based on your family law situation, I recommend documenting all relevant interactions and communications. Family law cases often involve sensitive matters, so maintaining clear records is crucial. Consider mediation as a first step to resolve conflicts amicably. For specific legal advice tailored to your situation, please consult with a qualified family law attorney.",
-            "criminal": "In criminal law matters, protecting your constitutional rights is paramount. You have the right to remain silent and the right to legal representation. Avoid discussing your case with anyone other than your attorney. The specific charges and evidence will determine the legal strategy. Please consult with a qualified criminal defense attorney for specific advice.",
-            "civil": "Civil law disputes typically involve contracts, property, or personal injury claims. Key elements include establishing duty, breach, causation, and damages. Documentation and evidence are critical in civil cases. Consider alternative dispute resolution methods like mediation or arbitration before litigation. Consult with a civil litigation attorney for specific guidance.",
-            "corporate": "Corporate law matters involve business formation, compliance, contracts, and governance. Key considerations include entity selection, regulatory compliance, intellectual property protection, and risk management. Maintain proper corporate records and follow formal procedures. Consult with a business attorney for specific corporate legal advice.",
-            "immigration": "Immigration law is complex and subject to frequent changes. Key areas include visas, green cards, deportation defense, and citizenship. Documentation accuracy and meeting deadlines are crucial. Immigration cases often require specialized knowledge of current laws and procedures. Consult with an immigration attorney for specific case guidance.",
-            "employment": "Employment law covers workplace rights, discrimination, wages, and termination. Key protections include anti-discrimination laws, wage and hour regulations, and workplace safety. Document any issues carefully and follow company complaint procedures. Consult with an employment law attorney for specific workplace issues.",
-            "real_estate": "Real estate law involves property transactions, landlord-tenant issues, and property disputes. Key elements include contracts, titles, disclosures, and local regulations. Due diligence is essential in all real estate transactions. Consult with a real estate attorney for specific property matters.",
-            "other": "For general legal matters, it's important to understand your rights and obligations. Document everything relevant to your situation, research applicable laws, and consider alternative dispute resolution methods. Many legal issues have specific procedural requirements and deadlines. Consult with a qualified attorney for advice tailored to your specific situation."
+            "family": "Based on your family law situation, I can help you understand your rights and options. Family law matters involve custody, divorce, child support, and spousal support under relevant acts like the Hindu Marriage Act, Special Marriage Act, and Guardian and Wards Act. Key provisions include Section 125 of CrPC for maintenance, and various articles under personal laws. I can guide you through the legal process and help you make informed decisions for your case.",
+            "criminal": "In criminal law matters, I can help protect your constitutional rights and navigate the legal system. You have rights under Articles 20-22 of the Constitution and CrPC provisions including Section 161 (examination by police), Section 167 (case diary), and Section 167A (medical examination). I can explain IPC sections applicable to your case, potential defenses under Sections 96-106, and legal strategies under the Evidence Act and CrPC.",
+            "civil": "For civil law disputes, I can analyze contracts, property issues, or personal injury claims. Key provisions include the Civil Procedure Code (CPC) Sections, Specific Relief Act, Contract Act, and Limitation Act. I can help you evaluate your case strength, consider alternative dispute resolution under Section 89 CPC, and develop a legal strategy for your situation.",
+            "corporate": "Regarding corporate law matters, I can assist with business formation, compliance, contracts, and governance. Key laws include Companies Act 2013, LLP Act, GST provisions, and SEBI regulations. I can help you understand corporate formalities, director responsibilities under Section 166, and compliance requirements for your business structure.",
+            "immigration": "For immigration law issues, I can help navigate this complex area including visas, green cards, and citizenship. Key provisions include the Citizenship Act, Immigration Rules, and relevant articles. I can explain the current laws, procedures, and help you understand your options for your specific immigration situation.",
+            "employment": "In employment law matters, I can help protect your workplace rights regarding discrimination, wages, and termination. Key protections include the Industrial Disputes Act, Shops and Establishments Act, Payment of Wages Act, and constitutional provisions under Articles 14-16. I can help you document issues, follow proper procedures, and develop a strategy to address your workplace concerns.",
+            "real_estate": "For real estate law matters, I can assist with property transactions, landlord-tenant issues, and property disputes. Key laws include the Transfer of Property Act, Registration Act, Rent Control Acts, and RERA provisions. I can help you understand your rights and obligations in real estate matters.",
+            "other": "For your legal matter, I can provide comprehensive legal analysis and guidance. I'll help you understand your rights, evaluate your options, and develop a strategy using relevant statutory provisions, case law precedents, and procedural requirements. Many legal issues have specific procedural requirements and deadlines that I can help you navigate effectively."
         }
         
         response = fallback_responses.get(category, fallback_responses["other"])
@@ -108,20 +118,20 @@ Please provide a helpful, informative response that addresses the user's questio
         return {
             "content": response,
             "confidence": 0.75,  # Lower confidence for fallback
-            "sources": "General legal information - consult with qualified attorney for specific advice"
+            "sources": "AI Legal Assistant - Comprehensive legal analysis and guidance"
         }
     
     def _extract_legal_sources(self, response_text: str, category: str) -> str:
         """Extract legal sources from response"""
         category_sources = {
-            "family": "Family Law Act, State Custody Guidelines, Mediation Best Practices",
-            "criminal": "Constitutional Rights, Criminal Procedure Code, Miranda Rights",
-            "civil": "Civil Procedure Rules, Contract Law Principles, Tort Law",
-            "corporate": "Business Corporation Act, Securities Regulations, Contract Law",
-            "immigration": "Immigration and Nationality Act, Federal Regulations, Case Law",
-            "employment": "Labor Standards Act, Anti-Discrimination Laws, OSHA Regulations",
-            "real_estate": "Real Property Law, Landlord-Tenant Statutes, Contract Law",
-            "other": "General Legal Principles, State and Federal Laws"
+            "family": "Hindu Marriage Act 1955, Special Marriage Act 1954, Guardian and Wards Act 1890, CrPC Section 125, Family Courts Act, Domestic Violence Act",
+            "criminal": "Indian Penal Code 1860, Criminal Procedure Code 1973, Indian Evidence Act 1872, Constitution Articles 20-22, Specific Relief Act",
+            "civil": "Civil Procedure Code 1908, Contract Act 1872, Specific Relief Act 1963, Limitation Act 1963, Transfer of Property Act 1882",
+            "corporate": "Companies Act 2013, Limited Liability Partnership Act 2008, GST Act 2017, SEBI Regulations, Insolvency and Bankruptcy Code 2016",
+            "immigration": "Citizenship Act 1955, Passport Act 1967, Immigration Rules, Foreigners Act 1946, Constitution Articles 5-11",
+            "employment": "Industrial Disputes Act 1947, Shops and Establishments Act, Payment of Wages Act 1936, Employees' Compensation Act 1923, Constitution Articles 14-16",
+            "real_estate": "Transfer of Property Act 1882, Registration Act 1908, Rent Control Acts, RERA 2016, Municipal Acts",
+            "other": "General Legal Principles, Constitution of India, Supreme Court Judgments, High Court Precedents, Specialized Statutes"
         }
         
         return category_sources.get(category, "General Legal Sources")

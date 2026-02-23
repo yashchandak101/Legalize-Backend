@@ -92,9 +92,9 @@ class AIService:
 
     def _build_case_suggestion_prompt(self, title: str, description: str, 
                                      documents: List[Dict[str, Any]] = None) -> str:
-        """Build the prompt for case suggestions."""
+        """Build prompt for case suggestions."""
         prompt = f"""
-As a legal AI assistant, analyze the following case and provide actionable suggestions:
+As an AI legal assistant acting as a knowledgeable lawyer, analyze the following case and provide comprehensive legal guidance. Serve both lawyers seeking legal research support and general public seeking legal information.
 
 Case Title: {title}
 Case Description: {description}
@@ -106,17 +106,22 @@ Case Description: {description}
                 prompt += f"- {doc.get('original_filename', 'Unknown')}: {doc.get('mime_type', 'Unknown')}\n"
         
         prompt += """
-Please provide suggestions in the following JSON format:
+Please provide comprehensive legal analysis in the following JSON format:
 {
     "legal_issues": ["Issue 1", "Issue 2"],
+    "applicable_laws": ["Law 1 with section numbers", "Law 2 with article numbers"],
+    "legal_provisions": ["Specific sections/dhara/articles applicable"],
+    "case_law": ["Relevant case precedents and judgments"],
     "recommended_actions": ["Action 1", "Action 2"],
-    "relevant_laws": ["Law 1", "Law 2"],
+    "legal_strategy": "Comprehensive legal strategy approach",
     "timeline_suggestions": ["Timeline item 1", "Timeline item 2"],
     "risk_assessment": "Low/Medium/High risk with explanation",
-    "next_steps": ["Step 1", "Step 2"]
+    "next_steps": ["Step 1", "Step 2"],
+    "for_lawyers": "Additional legal research points and strategy considerations",
+    "for_general_public": "Simplified explanation of legal rights and options"
 }
 
-Focus on practical, actionable advice that would be helpful for a lawyer handling this case.
+Focus on providing practical legal solutions and strategies. Include specific legal provisions: IPC sections, CrPC sections, Constitution articles, dhara, and relevant case law. Cite statutory authorities with section numbers. For Indian law, mention specific dhara and sections. Act as a knowledgeable AI lawyer providing direct assistance to both legal professionals and general public.
 """
         return prompt
 
@@ -127,7 +132,7 @@ Focus on practical, actionable advice that would be helpful for a lawyer handlin
             content = content[:10000] + "...[truncated]"
         
         prompt = f"""
-As a legal AI assistant, analyze the following {document_type} document:
+As an AI legal assistant acting as a knowledgeable lawyer, analyze the following {document_type} document and provide comprehensive legal analysis. Serve both lawyers seeking detailed legal analysis and general public seeking understandable explanations.
 
 Document Content:
 {content}
@@ -136,13 +141,20 @@ Please provide analysis in the following JSON format:
 {{
     "document_type": "{document_type}",
     "key_points": ["Point 1", "Point 2"],
-    "legal_terms": ["Term 1", "Term 2"],
-    "risks": ["Risk 1", "Risk 2"],
-    "recommendations": ["Recommendation 1", "Recommendation 2"],
-    "summary": "Brief summary of the document"
+    "legal_terms": ["Legal term 1 with explanation", "Legal term 2 with explanation"],
+    "applicable_provisions": ["Specific sections/articles/dhara applicable"],
+    "statutory_references": ["Relevant acts and section numbers"],
+    "case_precedents": ["Relevant judgments and precedents"],
+    "risks": ["Legal risk 1 with mitigation", "Legal risk 2 with mitigation"],
+    "recommendations": ["Legal recommendation 1", "Legal recommendation 2"],
+    "compliance_requirements": ["Specific compliance requirements"],
+    "summary": "Brief legal summary",
+    "legal_implications": "Detailed legal implications and consequences",
+    "for_lawyers": "Technical legal analysis and strategy points",
+    "for_general_public": "Simplified explanation of rights and obligations"
 }}
 
-Focus on identifying key legal terms, potential risks, and actionable recommendations.
+Focus on identifying specific legal provisions, statutory references, case law precedents, and compliance requirements. Include IPC sections, CrPC provisions, Constitution articles, dhara, and relevant statutory authorities. Act as a knowledgeable AI lawyer providing comprehensive legal analysis for both legal professionals and general public.
 """
         return prompt
 
@@ -156,7 +168,7 @@ Focus on identifying key legal terms, potential risks, and actionable recommenda
             response = client.chat.completions.create(
                 model="gpt-4",
                 messages=[
-                    {"role": "system", "content": "You are a helpful legal AI assistant. Always respond with valid JSON."},
+                    {"role": "system", "content": "You are a knowledgeable AI legal assistant acting as a lawyer. Provide comprehensive legal analysis and guidance directly."},
                     {"role": "user", "content": prompt}
                 ],
                 max_tokens=1000,

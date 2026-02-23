@@ -44,7 +44,7 @@ class LegalAidService:
             welcome_message = LegalAidMessage(
                 conversation_id=conversation.id,
                 user_id=user_id,
-                content=f"Hello! I'm your AI legal assistant for this {category} matter. I can help you understand your legal situation, provide general information, and guide you through next steps. You can also upload relevant documents for analysis. Remember, I provide general legal information, but for specific legal advice, you may need to consult with a qualified attorney.",
+                content=f"Hello! I'm your AI legal assistant for this {category} matter. I serve both legal professionals and the general public with comprehensive legal assistance. I can provide detailed legal analysis, cite specific provisions (IPC sections, CrPC sections, Constitution articles, dhara), reference case law precedents, and offer practical legal strategies. For lawyers: I offer research support and strategy analysis. For general public: I explain complex legal concepts clearly and guide you through your options. How can I assist you with your legal matter today?",
                 message_type="ai",
                 ai_confidence=0.95
             )
