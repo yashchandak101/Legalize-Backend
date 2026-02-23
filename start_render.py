@@ -102,7 +102,6 @@ def start_application():
             '--workers', '1',
             '--bind', f'0.0.0.0:{port}',
             '--timeout', '120',
-            '--keepalive', '5',
             '--max-requests', '1000',
             '--max-requests-jitter', '100',
             '--log-level', 'info',
