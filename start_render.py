@@ -57,6 +57,8 @@ def run_migrations():
         
     except Exception as e:
         logger.error(f"Migration failed: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 def create_initial_data():

@@ -1,7 +1,6 @@
 import logging
 from logging.config import fileConfig
-
-from flask import current_app
+import os
 
 from alembic import context
 
@@ -14,41 +13,57 @@ config = context.config
 fileConfig(config.config_file_name)
 logger = logging.getLogger('alembic.env')
 
+# Check if we're in a Flask context
+try:
+    from flask import current_app
+    FLASK_CONTEXT_AVAILABLE = True
+except ImportError:
+    FLASK_CONTEXT_AVAILABLE = False
 
-def get_engine():
+if FLASK_CONTEXT_AVAILABLE:
     try:
-        # this works with Flask-SQLAlchemy<3 and Alchemical
-        return current_app.extensions['migrate'].db.get_engine()
-    except (TypeError, AttributeError):
-        # this works with Flask-SQLAlchemy>=3
-        return current_app.extensions['migrate'].db.engine
+        def get_engine():
+            try:
+                # this works with Flask-SQLAlchemy<3 and Alchemical
+                return current_app.extensions['migrate'].db.get_engine()
+            except (TypeError, AttributeError):
+                # this works with Flask-SQLAlchemy>=3
+                return current_app.extensions['migrate'].db.engine
 
+        def get_engine_url():
+            try:
+                return get_engine().url.render_as_string(hide_password=False).replace(
+                    '%', '%%')
+            except AttributeError:
+                return str(get_engine().url).replace('%', '%%')
 
-def get_engine_url():
-    try:
-        return get_engine().url.render_as_string(hide_password=False).replace(
-            '%', '%%')
-    except AttributeError:
-        return str(get_engine().url).replace('%', '%%')
+        # add your model's MetaData object here
+        # for 'autogenerate' support
+        # from myapp import mymodel
+        # target_metadata = mymodel.Base.metadata
+        config.set_main_option('sqlalchemy.url', get_engine_url())
+        target_db = current_app.extensions['migrate'].db
 
+        def get_metadata():
+            if hasattr(target_db, 'metadatas'):
+                return target_db.metadatas[None]
+            return target_db.metadata
 
-# add your model's MetaData object here
-# for 'autogenerate' support
-# from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
-config.set_main_option('sqlalchemy.url', get_engine_url())
-target_db = current_app.extensions['migrate'].db
+    except RuntimeError:
+        # Flask app context not available, use direct URL
+        FLASK_CONTEXT_AVAILABLE = False
 
-# other values from the config, defined by the needs of env.py,
-# can be acquired:
-# my_important_option = config.get_main_option("my_important_option")
-# ... etc.
-
-
-def get_metadata():
-    if hasattr(target_db, 'metadatas'):
-        return target_db.metadatas[None]
-    return target_db.metadata
+if not FLASK_CONTEXT_AVAILABLE:
+    # Use direct database URL without Flask context
+    database_url = os.getenv('DATABASE_URL') or config.get_main_option('sqlalchemy.url')
+    config.set_main_option('sqlalchemy.url', database_url)
+    
+    # Create a simple metadata object
+    from sqlalchemy import MetaData
+    target_metadata = MetaData()
+    
+    def get_metadata():
+        return target_metadata
 
 
 def run_migrations_offline():
@@ -80,31 +95,46 @@ def run_migrations_online():
 
     """
 
-    # this callback is used to prevent an auto-migration from being generated
-    # when there are no changes to the schema
-    # reference: http://alembic.zzzcomputing.com/en/latest/cookbook.html
-    def process_revision_directives(context, revision, directives):
-        if getattr(config.cmd_opts, 'autogenerate', False):
-            script = directives[0]
-            if script.upgrade_ops.is_empty():
-                directives[:] = []
-                logger.info('No changes in schema detected.')
+    if FLASK_CONTEXT_AVAILABLE:
+        # this callback is used to prevent an auto-migration from being generated
+        # when there are no changes to the schema
+        # reference: http://alembic.zzzcomputing.com/en/latest/cookbook.html
+        def process_revision_directives(context, revision, directives):
+            if getattr(config.cmd_opts, 'autogenerate', False):
+                script = directives[0]
+                if script.upgrade_ops.is_empty():
+                    directives[:] = []
+                    logger.info('No changes in schema detected.')
 
-    conf_args = current_app.extensions['migrate'].configure_args
-    if conf_args.get("process_revision_directives") is None:
-        conf_args["process_revision_directives"] = process_revision_directives
+        conf_args = current_app.extensions['migrate'].configure_args
+        if conf_args.get("process_revision_directives") is None:
+            conf_args["process_revision_directives"] = process_revision_directives
 
-    connectable = get_engine()
+        connectable = get_engine()
 
-    with connectable.connect() as connection:
-        context.configure(
-            connection=connection,
-            target_metadata=get_metadata(),
-            **conf_args
-        )
+        with connectable.connect() as connection:
+            context.configure(
+                connection=connection,
+                target_metadata=get_metadata(),
+                **conf_args
+            )
 
-        with context.begin_transaction():
-            context.run_migrations()
+            with context.begin_transaction():
+                context.run_migrations()
+    else:
+        # Run without Flask context
+        from sqlalchemy import create_engine
+        database_url = os.getenv('DATABASE_URL') or config.get_main_option('sqlalchemy.url')
+        engine = create_engine(database_url)
+        
+        with engine.connect() as connection:
+            context.configure(
+                connection=connection,
+                target_metadata=get_metadata()
+            )
+
+            with context.begin_transaction():
+                context.run_migrations()
 
 
 if context.is_offline_mode():
