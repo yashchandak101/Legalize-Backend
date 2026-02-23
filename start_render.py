@@ -93,6 +93,8 @@ def start_application():
         
         # Get port from environment or use default
         port = os.getenv('PORT', 5000)
+        logger.info(f"Using port: {port}")
+        logger.info(f"PORT environment variable: {os.getenv('PORT')}")
         
         # Gunicorn command
         cmd = [
@@ -103,11 +105,13 @@ def start_application():
             '--keepalive', '5',
             '--max-requests', '1000',
             '--max-requests-jitter', '100',
+            '--log-level', 'info',
             'run:app'
         ]
         
         # Start Gunicorn
         logger.info(f"Running command: {' '.join(cmd)}")
+        logger.info(f"Binding to 0.0.0.0:{port}")
         subprocess.run(cmd, check=True)
         
     except Exception as e:

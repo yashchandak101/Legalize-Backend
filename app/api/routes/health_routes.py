@@ -1,5 +1,5 @@
 """Health check for load balancer and ops."""
-from flask import Blueprint, current_app
+from flask import Blueprint, current_app, jsonify
 from sqlalchemy import text
 from app.core.extensions import db
 
@@ -17,3 +17,13 @@ def health():
         except Exception as e:
             db_status = str(e)
     return {"status": "ok", "db": db_status}, 200
+
+
+@health_bp.route("/", methods=["GET"])
+def root():
+    """Root endpoint to verify app is running."""
+    return jsonify({
+        "message": "Legalize Backend API",
+        "status": "running",
+        "version": "1.0.0"
+    }), 200
